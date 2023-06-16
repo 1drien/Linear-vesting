@@ -1,6 +1,6 @@
 # Linear-vesting
-Contrat de vesting linéaire créé avec Solidity pour la blockchain Ethereum. Le contrat permet à un propriétaire de tokens ERC20 de les verrouiller dans le contrat pour une période de temps spécifiée, après laquelle les tokens sont progressivement libérés à un bénéficiaire sur une durée définie.
+Linear vesting contract created with Solidity for the Ethereum blockchain. The contract allows an owner of ERC20 tokens to lock them into the contract for a specified period of time, after which the tokens are progressively released to a beneficiary over a defined duration.
 
-Le contrat démarre avec une période de "cliff", pendant laquelle aucune allocation n'est libérée.
+The contract starts with a "cliff" period, during which no allocations are released.
 
-Après la période de cliff, les tokens sont libérés de manière linéaire sur la période de vesting.
+After the cliff period, tokens are released linearly over the vesting period.

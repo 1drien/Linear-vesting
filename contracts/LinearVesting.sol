@@ -4,12 +4,11 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract LinearVesting is
-    Ownable // pour controler qui peut appeller lock()
-{
+contract LinearVesting is Ownable {
     IERC20 token;
-    uint256 public start; // cliff
-    uint256 public duration;
+    uint256 public start; // quand le vesting commence
+    uint256 public cliff; // Période en seconde
+    uint256 public duration; // durée du vesting
     address receiver; // destinataire
     uint256 amount; // nombre de tokkens envoyés
     uint256 expiry;
@@ -18,14 +17,21 @@ contract LinearVesting is
 
     //ajouter event
 
-    constructor(address _token, uint256 _start, uint256 _duration) {
-        require(address(_token) != address(0), "Token is the zero address");
+    constructor(
+        address _token,
+        uint256 _start,
+        uint256 _duration,
+        uint256 _cliff
+    ) {
         require(_duration > 0, "Duration must be positive");
-
+        require(
+            _duration >= _cliff,
+            "cliff ne peut être supérieur a la durée du vesting"
+        );
+        cliff = _cliff;
         token = IERC20(_token);
-        start = _start;
+        //on initialise pas start dans le constructeur pour s'assurer que la période de vesting commence après que les tokens verouillés
         duration = _duration;
-        owner = msg.sender;
     }
 
     //imobiliser tokkens a periode determinée
@@ -37,25 +43,23 @@ contract LinearVesting is
     ) public onlyOwner {
         // Vérifier que le montant à verrouiller est positif
         require(_amount > 0, "Le montant à verrouiller doit être positif");
-        require(
-            msg.sender == owner,
-            "Seul le propriétaire peut verrouiller des tokens"
-        );
         require(!locked, "We have alrady locked tokens");
+        /*require(totalAmount == 0, "Already locked");*/ // peut etre verrouillé qu'une seule fois
+        token.transferFrom(msg.sender, address(this), _amount);
 
-        token.transferFrom(_from, address(this), _amount);
         receiver = _receiver;
         expiry = _expiry;
-        locked = true;
         amount = _amount;
+        start = block.timestamp;
     }
 
     // libération des tokens selon letemps fixé
 
-    function withdraw() external {
+    function release() external {
         require(!claimed, "tokens have been claimed");
-        require(_start > block.timestamp, "Start must be in the future");
+        require(block.timestamp >= start, "Vesting n'est pas commencé");
         claimed = true;
-        token.transefer(reciver, amount);
+        //libération es tokens linéaire
+        token.transfer(reciver, amount);
     }
 }

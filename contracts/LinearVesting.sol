@@ -4,7 +4,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract LinearVesting {
+contract LinearVesting is
+    Ownable // pour controler qui peut appeller lock()
+{
     IERC20 token;
     uint256 public start; // cliff
     uint256 public duration;
@@ -18,7 +20,6 @@ contract LinearVesting {
 
     constructor(address _token, uint256 _start, uint256 _duration) {
         require(address(_token) != address(0), "Token is the zero address");
-        //require(_start > block.timestamp, "Start must be in the future");
         require(_duration > 0, "Duration must be positive");
 
         token = IERC20(_token);
@@ -33,7 +34,7 @@ contract LinearVesting {
         address _receiver,
         uint256 _amount,
         uint256 _expiry
-    ) public {
+    ) public onlyOwner {
         // Vérifier que le montant à verrouiller est positif
         require(_amount > 0, "Le montant à verrouiller doit être positif");
         require(
@@ -44,7 +45,17 @@ contract LinearVesting {
 
         token.transferFrom(_from, address(this), _amount);
         receiver = _receiver;
+        expiry = _expiry;
+        locked = true;
+        amount = _amount;
     }
 
     // libération des tokens selon letemps fixé
+
+    function withdraw() external {
+        require(!claimed, "tokens have been claimed");
+        require(_start > block.timestamp, "Start must be in the future");
+        claimed = true;
+        token.transefer(reciver, amount);
+    }
 }

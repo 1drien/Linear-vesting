@@ -77,6 +77,6 @@ contract LinearVesting is Ownable {
         uint256 totalAmount = pourcentageTime * amount;
         //Transférer ces tokens au bénéficiaire.
 
-        token.transfer(receiver, totalAmount);
+        token.transfer(receiver, totalAmount); //
     }
 }

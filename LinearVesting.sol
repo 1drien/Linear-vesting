@@ -44,7 +44,7 @@ contract LinearVesting is Ownable {
         // Vérifier que le montant à verrouiller est positif
         require(_amount > 0, "Le montant a verrouiller doit etre positif");
 
-        require(totalAmount == 0, "Already locked"); // peut etre verrouillé qu'une seule fois
+        require(totalAmount == 0, "deja locker"); // peut etre verrouillé qu'une seule fois
 
         token.transferFrom(_from, address(this), _amount); //transférer les tokens du propriétaire original (_from) vers le contrat de vesting (address(this)).
 

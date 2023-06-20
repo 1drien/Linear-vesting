@@ -18,7 +18,7 @@ contract LinearVesting is Ownable {
     uint256 totalAmount; // total amount of tokens locked in the contract
 
     // add event
-
+    //
     constructor(address _token, uint256 _duration, uint256 _cliff) {
         require(_duration > 0, "Duration must be positive");
         require(

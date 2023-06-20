@@ -10,29 +10,29 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract LinearVesting is Ownable {
     IERC20 token;
-    uint256 public start; // quand le vesting commence
-    uint256 public cliff; // Période en seconde
-    uint256 public duration; // durée du vesting
-    address receiver; // destinataire
-    uint256 amount; // nombre de tokkens envoyés
-    uint256 totalAmount; // montant total des tokens bloqués dans le contract
+    uint256 public start; // when the vesting starts
+    uint256 public cliff; // period in seconds
+    uint256 public duration; // vesting duration
+    address receiver; // recipient
+    uint256 amount; // number of tokens to be sent
+    uint256 totalAmount; // total amount of tokens locked in the contract
 
-    //ajouter event
+    // add event
 
     constructor(address _token, uint256 _duration, uint256 _cliff) {
-        require(_duration > 0, "La duree doit etre positive");
+        require(_duration > 0, "Duration must be positive");
         require(
             _duration >= _cliff,
-            "cliff ne peut etre superieur a la duree du vesting"
+            "Cliff cannot be greater than the vesting duration"
         );
         cliff = _cliff;
         token = IERC20(_token);
-        //on initialise pas start dans le constructeur pour s'assurer que la période de vesting commence après que les tokens verouillés
+        // start is not initialized in the constructor to ensure that the vesting period starts after the locked tokens
         duration = _duration;
     }
 
     /**
-     * @dev imobiliser tokkens a periode determinée
+     * @dev Lock tokens for a specified period
      * @param _from description from
      * @param _receiver description receiver
      */
@@ -41,12 +41,12 @@ contract LinearVesting is Ownable {
         address _receiver,
         uint256 _amount
     ) public onlyOwner {
-        // Vérifier que le montant à verrouiller est positif
-        require(_amount > 0, "Le montant a verrouiller doit etre positif");
+        // Check that the amount to be locked is positive
+        require(_amount > 0, "The amount to lock must be positive");
 
-        require(totalAmount == 0, "deja locker"); // peut etre verrouillé qu'une seule fois
+        require(totalAmount == 0, "Already locked"); // can only be locked once
 
-        token.transferFrom(_from, address(this), _amount); //transférer les tokens du propriétaire original (_from) vers le contrat de vesting (address(this)).
+        token.transferFrom(_from, address(this), _amount); // transfer the tokens from the original owner (_from) to the vesting contract (address(this)).
 
         receiver = _receiver;
         amount = _amount;
@@ -54,28 +54,28 @@ contract LinearVesting is Ownable {
         totalAmount = _amount;
     }
 
-    //Pas de paramètres
+    // No parameters
     /**
-     * @dev libération linéaire des tokens selon letemps fixé
+     * @dev Linear release of tokens according to the set time
      *
      *
      */
     function release() external {
-        require(block.timestamp >= start, "Vesting n'est pas commence");
+        require(block.timestamp >= start, "Vesting has not started");
         require(
             block.timestamp >= start + cliff,
-            "Avant le cliff rien ne peut etre retire"
-        ); //le délai de vesting a commencé.
+            "Nothing can be withdrawn before the cliff"
+        ); // the vesting delay has started
         require(
             msg.sender == receiver || msg.sender == owner(),
-            "Vous n'etes pas autorise a liberer les tokens"
+            "You are not authorized to release the tokens"
         );
-        // calcule du pourcentage de temps depuis le debut du vesting
-        uint256 pourcentageTime = (block.timestamp - start) / duration;
+        // calculate the percentage of time since the start of vesting
+        uint256 timePercentage = (block.timestamp - start) / duration;
 
-        //combien de tokens sont disponibles pour être libérés en fonction du temps écoulé depuis le début du vesting.
-        uint256 totalAmount = pourcentageTime * amount;
-        //Transférer ces tokens au bénéficiaire.
+        // how many tokens are available to be released based on the time elapsed since the start of vesting
+        uint256 totalAmount = timePercentage * amount;
+        // Transfer these tokens to the beneficiary
 
         token.transfer(receiver, totalAmount); //
     }

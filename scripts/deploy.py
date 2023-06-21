@@ -1,3 +1,4 @@
+# import my contract
 from brownie import MyToken, LinearVesting, accounts
 
 
@@ -7,6 +8,7 @@ def main():
     # Deploy the token
     initialSupply = 1000000 * 10**18
     myToken = MyToken.deploy(initialSupply, {"from": account})
+    print("Token:", myToken.address)
 
     # Deploy the vesting contract
     duration = 180
@@ -14,5 +16,4 @@ def main():
     linearVesting = LinearVesting.deploy(
         myToken.address, duration, cliff, {"from": account}
     )
-    print("Token:", myToken.address)
     print("Vesting:", linearVesting.address)

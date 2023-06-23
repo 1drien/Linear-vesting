@@ -6,18 +6,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title LinearVesting
- * @dev
+ * @dev Linear vesting contract
  */
 contract LinearVesting is Ownable {
-    IERC20 token;
+    IERC20 immutable token;
     uint256 public start; // when the vesting starts
     uint256 public cliff; // period in seconds
     uint256 public duration; // vesting duration
-    address receiver; // recipient
-    uint256 amount; // number of tokens to be sent
-    uint256 totalAmount; // total amount of tokens locked in the contract
-
-    // add event
+    address public receiver; // recipient
+    uint256 public amount; // number of tokens to be sent
+    uint256 public totalAmount; // total amount of tokens locked in the contract
 
     constructor(address _token, uint256 _duration, uint256 _cliff) {
         require(_duration > 0, "Duration must be positive");
@@ -25,6 +23,7 @@ contract LinearVesting is Ownable {
             _duration >= _cliff,
             "Cliff cannot be greater than the vesting duration"
         );
+
         cliff = _cliff;
         token = IERC20(_token);
         // start is not initialized in the constructor to ensure that the vesting period starts after the locked tokens
@@ -33,32 +32,28 @@ contract LinearVesting is Ownable {
 
     /**
      * @dev Lock tokens for a specified period
-     * @param _from description from
      * @param _receiver description receiver
+     * @param _amount number of token to lock
      */
-    function lock(
-        address _from,
-        address _receiver,
-        uint256 _amount
-    ) public onlyOwner {
+    function lock(address _receiver, uint256 _amount) public onlyOwner {
         // Check that the amount to be locked is positive
         require(_amount > 0, "The amount to lock must be positive");
 
-        require(totalAmount == 0, "Already locked"); // can only be locked once
+        // can only be locked once
+        require(totalAmount == 0, "Already locked");
 
-        token.transferFrom(_from, address(this), _amount); // transfer the tokens from the original owner (_from) to the vesting contract (address(this)).
+        // transfer the tokens from the original owner (msg.sender) to the vesting contract (address(this)).
+        token.transferFrom(msg.sender, address(this), _amount);
 
         receiver = _receiver;
         amount = _amount;
         start = block.timestamp;
-        totalAmount = _amount;
+        totalAmount = 0;
     }
 
-    // No parameters
     /**
      * @dev Linear release of tokens according to the set time
-     *
-     *
+     * No parameters
      */
     function release() external {
         require(block.timestamp >= start, "Vesting has not started");
@@ -74,9 +69,10 @@ contract LinearVesting is Ownable {
         uint256 timePercentage = (block.timestamp - start) / duration;
 
         // how many tokens are available to be released based on the time elapsed since the start of vesting
-        uint256 totalAmount = timePercentage * amount;
-        // Transfer these tokens to the beneficiary
+        uint256 availableAmount = timePercentage * amount;
+        totalAmount += availableAmount;
 
-        token.transfer(receiver, totalAmount); //
+        // Transfer these tokens to the beneficiary
+        token.transfer(receiver, totalAmount);
     }
 }

@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev Linear vesting contract
  */
 contract LinearVesting is Ownable {
-    IERC20 immutable token;
+    IERC20 public immutable token;
     uint256 public start; // when the vesting starts
     uint256 public cliff; // period in seconds
     uint256 public duration; // vesting duration
@@ -48,14 +48,14 @@ contract LinearVesting is Ownable {
         receiver = _receiver;
         amount = _amount;
         start = block.timestamp;
-        totalAmount = 0;
+        totalAmount = _amount;
     }
 
     /**
      * @dev Linear release of tokens according to the set time
      * No parameters
      */
-    function release() external {
+    function withdraw() external {
         require(block.timestamp >= start, "Vesting has not started");
         require(
             block.timestamp >= start + cliff,
@@ -65,14 +65,29 @@ contract LinearVesting is Ownable {
             msg.sender == receiver || msg.sender == owner(),
             "You are not authorized to release the tokens"
         );
-        // calculate the percentage of time since the start of vesting
-        uint256 timePercentage = (block.timestamp - start) / duration;
 
-        // how many tokens are available to be released based on the time elapsed since the start of vesting
-        uint256 availableAmount = timePercentage * amount;
-        totalAmount += availableAmount;
+        // If the vesting period is over, allow the beneficiary to withdraw all tokens
+        if (block.timestamp >= start + duration) {
+            token.transfer(receiver, totalAmount);
+            totalAmount = 0;
+        } else {
+            // calculate the percentage of time since the start of vesting
+            uint256 timePercentage = (block.timestamp - start) / duration;
 
-        // Transfer these tokens to the beneficiary
-        token.transfer(receiver, totalAmount);
+            // how many tokens are available to be released based on the time elapsed since the start of vesting
+            uint256 availableAmount = timePercentage * amount;
+
+            // Check if the totalAmount is greater than the availableAmount
+            require(
+                totalAmount >= availableAmount,
+                "No tokens available for release"
+            );
+
+            // Update the total amount
+            totalAmount -= availableAmount;
+
+            // Transfer these tokens to the beneficiary
+            token.transfer(receiver, availableAmount);
+        }
     }
 }

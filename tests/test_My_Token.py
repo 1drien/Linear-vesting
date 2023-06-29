@@ -1,30 +1,20 @@
 from brownie import MyToken, accounts
 
+# test 1: test_deploy_MyToken
+# test 2: test_transfer: check that the deployment account balance has decreased and that the receiver account balance has increased by the appropriate amount.
 
-def test_deploy_MyToken():
-    # arrange
-    account_params = {"from": accounts[0]}
-    initial_supply = 1000000 * 10**18
-    # Act
 
-    MyToken_instance = MyToken.deploy(initial_supply, account_params)
-
-    # assert
+def test_deploy_MyToken(my_token):
     assert (
-        MyToken_instance.totalSupply() == initial_supply
+        my_token.totalSupply() == 1000000
     )  # all tokens are allocated to the deployer account when the contract is created; this should be equal to the initial offer.
 
 
-# check that the deployment account balance has decreased
-# and that the receiver account balance has increased by the appropriate amount.
-def test_transfer():
-    account_params = {"from": accounts[0]}
-    initial_supply = 1000000 * 10**18
+def test_transfer(my_token):
     receiver = accounts[1]
-    transfer_amount = 5000000000
-
-    MyToken_instance = MyToken.deploy(initial_supply, account_params)
+    transfer_amount = 500000
+    account_params = {"from": accounts[0]}
     # Act
-    MyToken_instance.transfer(receiver, transfer_amount, account_params)
+    my_token.transfer(receiver, transfer_amount, account_params)
     # Assert
-    assert MyToken_instance.balanceOf(receiver) == transfer_amount
+    assert my_token.balanceOf(receiver) == transfer_amount

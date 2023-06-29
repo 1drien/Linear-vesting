@@ -42,7 +42,6 @@ contract LinearVesting is Ownable {
         // can only be locked once
         require(totalAmount == 0, "Already locked");
 
-        // transfer the tokens from the original owner (msg.sender) to the vesting contract (address(this)).
         token.transferFrom(msg.sender, address(this), _amount);
 
         receiver = _receiver;

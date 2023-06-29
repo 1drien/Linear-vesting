@@ -4,7 +4,7 @@ from brownie import MyToken, LinearVesting, accounts
 
 def main():
     # params settins in a dictionnary
-    settings = {"duration": 180, "cliff": 90, "initial_supply": 1000000 * 10**18}
+    settings = {"duration": 180, "cliff": 90, "initial_supply": 1000000}
     # account parameters
     account = accounts[0]
     account_params = {"from": account}

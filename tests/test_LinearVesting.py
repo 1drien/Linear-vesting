@@ -23,7 +23,10 @@ def test_lock_amount(my_token, new_vesting, receiver, amount, accounts_parameter
     assert new_vesting.amount() == amount
 
 
-def test_transfer_tokens(my_token, new_vesting, receiver, amount):
+def test_transfer_tokens(my_token, new_vesting, receiver, amount, accounts_parameters):
+    my_token.approve(new_vesting.address, amount, accounts_parameters)
+    new_vesting.lock(receiver, amount, accounts_parameters)
+
     # The receiver attempts to withdraw the tokens
     with reverts("Nothing can be withdrawn before the cliff"):
         new_vesting.withdraw({"from": receiver})
@@ -50,3 +53,14 @@ def test_of_cliff(new_vesting):
     cliff_of_vesting = new_vesting.cliff()
     # assert
     assert cliff_expected == cliff_of_vesting
+
+
+def test_of_withdraw_before__the_cliff(
+    my_token, new_vesting, receiver, amount, accounts_parameters
+):
+    my_token.approve(new_vesting.address, amount, accounts_parameters)
+    new_vesting.lock(receiver, amount, accounts_parameters)
+
+    with reverts("Nothing can be withdrawn before the cliff"):
+        new_vesting.withdraw({"from": receiver})
+    assert my_token.balanceOf(receiver) == amount

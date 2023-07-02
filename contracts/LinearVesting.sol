@@ -65,54 +65,42 @@ contract LinearVesting is Ownable {
      * No parameters
      */
     function withdraw() external {
+        Linear_vesting_details memory details = linear_vesting_details[
+            msg.sender
+        ];
+        require(block.timestamp >= details.start, "Vesting has not started");
         require(
-            block.timestamp >= linear_vesting_details[msg.sender].start,
-            "Vesting has not started"
-        );
-        require(
-            block.timestamp >= linear_vesting_details[msg.sender].start + cliff,
+            block.timestamp >= details.start + cliff,
             "Nothing can be withdrawn before the cliff"
         ); // the vesting delay has started
         require(
-            msg.sender == linear_vesting_details[msg.sender].receiver ||
-                linear_vesting_details[msg.sender].receiver == owner(),
+            msg.sender == details.receiver || details.receiver == owner(),
             "You are not authorized to release the tokens"
         );
 
         // If the vesting period is over, allow the beneficiary to withdraw all tokens
-        if (
-            block.timestamp >=
-            linear_vesting_details[msg.sender].start + duration
-        ) {
-            token.transfer(
-                linear_vesting_details[msg.sender].receiver,
-                linear_vesting_details[msg.sender].totalAmount
-            );
-            linear_vesting_details[msg.sender].totalAmount = 0;
+        if (block.timestamp >= details.start + duration) {
+            token.transfer(details.receiver, details.totalAmount);
+            details.totalAmount = 0;
         } else {
             // calculate the percentage of time since the start of vesting
-            uint256 timePercentage = (block.timestamp -
-                linear_vesting_details[msg.sender].start) / duration;
+            uint256 timePercentage = (block.timestamp - details.start) /
+                duration;
 
             // how many tokens are available to be released based on the time elapsed since the start of vesting
-            uint256 availableAmount = timePercentage *
-                linear_vesting_details[msg.sender].amount;
+            uint256 availableAmount = timePercentage * details.amount;
 
             // Check if the totalAmount is greater than the availableAmount
             require(
-                linear_vesting_details[msg.sender].totalAmount >=
-                    availableAmount,
+                details.totalAmount >= availableAmount,
                 "No tokens available for release"
             );
 
             // Update the total amount
-            linear_vesting_details[msg.sender].totalAmount -= availableAmount;
+            details.totalAmount -= availableAmount;
 
             // Transfer these tokens to the beneficiary
-            token.transfer(
-                linear_vesting_details[msg.sender].receiver,
-                availableAmount
-            );
+            token.transfer(details.receiver, availableAmount);
         }
     }
 }

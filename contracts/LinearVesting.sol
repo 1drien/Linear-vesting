@@ -14,6 +14,7 @@ contract LinearVesting is Ownable {
     uint256 public duration; // vesting duration
 
     struct LinearVestingDetails {
+        uint256 withdrawnAmount;
         uint256 start; // when the vesting starts
         uint256 amount; // number of the tokens to be sent
         uint256 totalAmount; // total amount of tokens locked in the contract
@@ -52,6 +53,7 @@ contract LinearVesting is Ownable {
         token.transferFrom(msg.sender, address(this), _amount);
 
         linearVestingDetails[_receiver] = LinearVestingDetails(
+            0,
             block.timestamp,
             _amount,
             _amount
@@ -76,7 +78,7 @@ contract LinearVesting is Ownable {
      * No parameters
      */
     function _withdrawFor(address _for) internal {
-        LinearVestingDetails memory details = linearVestingDetails[
+        LinearVestingDetails storage details = linearVestingDetails[
             _for
         ];
         require(
@@ -98,7 +100,7 @@ contract LinearVesting is Ownable {
                 duration;
 
             // how many tokens are available to be released based on the time elapsed since the start of vesting
-            uint256 availableAmount = timePercentage * details.amount / 10**8;
+            uint256 availableAmount = timePercentage * details.amount / 10**8 - details.withdrawnAmount;
 
             // Check if the totalAmount is greater than the availableAmount
             require(
@@ -107,8 +109,7 @@ contract LinearVesting is Ownable {
             );
 
             // Update the total amount
-            details.totalAmount -= availableAmount;
-
+            details.withdrawnAmount += availableAmount;
             // Transfer these tokens to the beneficiary
             token.transfer(_for, availableAmount);
         }

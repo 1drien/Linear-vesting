@@ -19,11 +19,6 @@ def vesting(my_token):
 
 
 @pytest.fixture(scope="module")
-def amount():
-    return 1000
-
-
-@pytest.fixture(scope="module")
 def accounts_parameters():
     return {"from": accounts[0]}
 
@@ -38,4 +33,14 @@ def new_vesting(my_token):
     accounts_param = {"from": accounts[0]}
     duration = 180
     cliff = 90
-    return LinearVesting.deploy(my_token.address, duration, cliff, accounts_param)
+    return LinearVesting.deploy(
+        my_token.address,
+        duration,
+        cliff,
+        accounts_param,
+    )
+
+
+@pytest.fixture(scope="function")
+def amount(new_vesting, receiver):
+    return new_vesting.linear_vesting_details(receiver).amount()

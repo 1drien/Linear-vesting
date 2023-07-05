@@ -13,14 +13,13 @@ contract LinearVesting is Ownable {
     uint256 public cliff; // period in seconds
     uint256 public duration; // vesting duration
 
-    struct Linear_vesting_details {
+    struct LinearVestingDetails {
         uint256 start; // when the vesting starts
-        address receiver; // recipient
         uint256 amount; // number of the tokens to be sent
         uint256 totalAmount; // total amount of tokens locked in the contract
     }
 
-    mapping(address => Linear_vesting_details) public linear_vesting_details;
+    mapping(address => LinearVestingDetails) public linearVestingDetails;
 
     constructor(address _token, uint256 _duration, uint256 _cliff) {
         require(_duration > 0, "Duration must be positive");
@@ -46,15 +45,14 @@ contract LinearVesting is Ownable {
 
         // can only be locked once
         require(
-            linear_vesting_details[msg.sender].totalAmount == 0,
+            linearVestingDetails[_receiver].totalAmount == 0,
             "Already locked"
         );
 
         token.transferFrom(msg.sender, address(this), _amount);
 
-        linear_vesting_details[_receiver] = Linear_vesting_details(
+        linearVestingDetails[_receiver] = LinearVestingDetails(
             block.timestamp,
-            _receiver,
             _amount,
             _amount
         );
@@ -65,30 +63,42 @@ contract LinearVesting is Ownable {
      * No parameters
      */
     function withdraw() external {
-        Linear_vesting_details memory details = linear_vesting_details[
-            msg.sender
+        _withdrawFor(msg.sender);
+    }
+
+    function withdrawFor(address _for) external {
+        _withdrawFor(_for);
+    }
+
+
+    /**
+     * @dev Linear release of tokens according to the set time
+     * No parameters
+     */
+    function _withdrawFor(address _for) internal {
+        LinearVestingDetails memory details = linearVestingDetails[
+            _for
         ];
-        require(block.timestamp >= details.start, "Vesting has not started");
         require(
             block.timestamp >= details.start + cliff,
             "Nothing can be withdrawn before the cliff"
         ); // the vesting delay has started
         require(
-            msg.sender == details.receiver || details.receiver == owner(),
+            msg.sender == _for ||  msg.sender == owner(),
             "You are not authorized to release the tokens"
         );
 
         // If the vesting period is over, allow the beneficiary to withdraw all tokens
-        if (block.timestamp >= details.start + duration) {
-            token.transfer(details.receiver, details.totalAmount);
+        if (block.timestamp >= details.start + duration + cliff) {
+            token.transfer(_for, details.totalAmount);
             details.totalAmount = 0;
         } else {
             // calculate the percentage of time since the start of vesting
-            uint256 timePercentage = (block.timestamp - details.start) /
+            uint256 timePercentage = (block.timestamp - details.start - cliff) * 10**8 /
                 duration;
 
             // how many tokens are available to be released based on the time elapsed since the start of vesting
-            uint256 availableAmount = timePercentage * details.amount;
+            uint256 availableAmount = timePercentage * details.amount / 10**8;
 
             // Check if the totalAmount is greater than the availableAmount
             require(
@@ -100,7 +110,7 @@ contract LinearVesting is Ownable {
             details.totalAmount -= availableAmount;
 
             // Transfer these tokens to the beneficiary
-            token.transfer(details.receiver, availableAmount);
+            token.transfer(_for, availableAmount);
         }
     }
 }
